@@ -64,6 +64,9 @@ def processar_pesquisa(alunos):
         print("Aluno não encontrado.")
         return None
     
+    if len(resultados) == 1:
+        return resultados[0]
+    
     if len(resultados) > 1:
         print("Foram encontrados múltiplos alunos:")
         for a in resultados:
@@ -86,44 +89,70 @@ def processar_pesquisa(alunos):
 def processar_edicao(alunos, aluno):
     for linha in formatar_aluno(aluno):
         print(linha)
-        
-    editar = solicitar_entrada("Deseja editar algum dado? (S/N): ").strip().upper()
     
-    if editar == "S":
-        opcoes = campos_editaveis()
-        
-        print("\nQual campo deseja editar?")
-        
-        for i, c in enumerate(opcoes, start=1):
-            print(f"{i} - {c}")
-            
-        esc = solicitar_entrada("Informe a opção: ").strip()
-        
-        if not esc.isdigit() or not (1 <= int(esc) <= len(opcoes)):
-            print("Opção inválida.")
-        else:
-            campo = opcoes[int(esc) - 1]
-            novo_valor = solicitar_entrada(f"Novo valor para {campo}: ").strip()
-            try:
-                editar_campo(aluno, campo, novo_valor)
-                salvar_dados(alunos)
-                print("Dados do aluno atualizados.")
-                for linha in formatar_aluno(aluno):
-                    print(linha)
-            except ValueError as e:
-                print(f"Erro: {e}")
-                
-    remover = solicitar_entrada("Deseja remover este aluno? (S/N): ").strip().upper()
+    acao = exibir_menu_acao()
     
-    if remover == "S":
-        conf = solicitar_entrada("Confirmar remoção? (S/N): ").strip().upper()
+    if acao == "1":
+        return editar_dados_aluno(alunos, aluno)
+    elif acao == "2":
+        return remover_aluno(alunos, aluno)
+    elif acao == "3" or acao == "":
+        print("Operação cancelada.")
+        return alunos
+    else:
+        print("Opção inválida.")
+        return alunos
+
+def exibir_menu_acao():
+    print("\nO que deseja fazer?")
+    print("1 - Editar")
+    print("2 - Remover")
+    print("3 - Voltar")
+    
+    return solicitar_entrada("Escolha uma opção: ").strip()
+
+def exibir_dados_aluno(aluno):
+    for linha in formatar_aluno(aluno):
+        print(linha)
+
+def editar_dados_aluno(alunos, aluno):
+    opcoes = campos_editaveis()
+    
+    print("\nQual campo deseja editar?")
+    
+    for i, c in enumerate(opcoes, start=1):
+        print(f"{i} - {c}")
         
-        if conf == "S":
-            alunos = remover_por_matricula(alunos, aluno.matricula)
-            salvar_dados(alunos)
-            print("Aluno removido.")
-        else:
-            print("Remoção cancelada.")
+    esc = solicitar_entrada("Informe a opção: ").strip()
+    
+    if not esc.isdigit() or not (1 <= int(esc) <= len(opcoes)):
+        print("Opção inválida.")
+        return alunos
+    
+    campo = opcoes[int(esc) - 1]
+    novo_valor = solicitar_entrada(f"Novo valor para {campo}: ").strip()
+    
+    try:
+        editar_campo(aluno, campo, novo_valor)
+        salvar_dados(alunos)
+        
+        print("Dados do aluno atualizados.")
+        
+        exibir_dados_aluno(aluno)
+    except ValueError as e:
+        print(f"Erro: {e}")
+        
+    return alunos
+
+def remover_aluno(alunos, aluno):
+    conf = solicitar_entrada("Confirmar remoção? (S/N): ").strip().upper()
+    
+    if conf == "S":
+        alunos = remover_por_matricula(alunos, aluno.matricula)
+        salvar_dados(alunos)
+        print("Aluno removido.")
+    else:
+        print("Remoção cancelada.")
     return alunos
 
 def processar_pesquisa_opcao(alunos):
