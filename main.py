@@ -1,5 +1,12 @@
 from src.repositories.aluno_repository import carregar_alunos, salvar_dados
-from src.services.aluno_service import inserir
+from src.services.aluno_service import (
+    inserir,
+    pesquisar_por_termo,
+    campos_editaveis,
+    editar_campo,
+    remover_por_matricula,
+    formatar_aluno,
+)
 from enum import Enum
 
 class OpcaoMenu(Enum):
@@ -43,6 +50,93 @@ def processar_insercao(alunos):
         print(f"Erro: {e}")
     return alunos
 
+def processar_pesquisa(alunos):
+    print("\n== Pesquisar Aluno ==")
+    
+    if not alunos:
+        print("Nenhum aluno cadastrado.")
+        return None
+    
+    termo = solicitar_entrada("Termo de pesquisa (matrícula ou nome): ").strip()
+    resultados = pesquisar_por_termo(alunos, termo)
+    
+    if not resultados:
+        print("Aluno não encontrado.")
+        return None
+    
+    if len(resultados) > 1:
+        print("Foram encontrados múltiplos alunos:")
+        for a in resultados:
+            print(f"Matrícula {a.matricula} - {a.nome}")
+            
+    sel = solicitar_entrada("Digite a matrícula para selecionar (ou ENTER p/ cancelar): ").strip()
+    
+    if sel == "":
+        print("Operação cancelada.")
+        return None
+    
+    selecionados = [a for a in resultados if a.matricula == sel]
+    
+    if not selecionados:
+        print("Matrícula inválida.")
+        return None
+    
+    return selecionados[0]
+
+def processar_edicao(alunos, aluno):
+    for linha in formatar_aluno(aluno):
+        print(linha)
+        
+    editar = solicitar_entrada("Deseja editar algum dado? (S/N): ").strip().upper()
+    
+    if editar == "S":
+        opcoes = campos_editaveis()
+        
+        print("\nQual campo deseja editar?")
+        
+        for i, c in enumerate(opcoes, start=1):
+            print(f"{i} - {c}")
+            
+        esc = solicitar_entrada("Informe a opção: ").strip()
+        
+        if not esc.isdigit() or not (1 <= int(esc) <= len(opcoes)):
+            print("Opção inválida.")
+        else:
+            campo = opcoes[int(esc) - 1]
+            novo_valor = solicitar_entrada(f"Novo valor para {campo}: ").strip()
+            try:
+                editar_campo(aluno, campo, novo_valor)
+                salvar_dados(alunos)
+                print("Dados do aluno atualizados.")
+                for linha in formatar_aluno(aluno):
+                    print(linha)
+            except ValueError as e:
+                print(f"Erro: {e}")
+                
+    remover = solicitar_entrada("Deseja remover este aluno? (S/N): ").strip().upper()
+    
+    if remover == "S":
+        conf = solicitar_entrada("Confirmar remoção? (S/N): ").strip().upper()
+        
+        if conf == "S":
+            alunos = remover_por_matricula(alunos, aluno.matricula)
+            salvar_dados(alunos)
+            print("Aluno removido.")
+        else:
+            print("Remoção cancelada.")
+    return alunos
+
+def processar_pesquisa_opcao(alunos):
+    selecionado = processar_pesquisa(alunos)
+    
+    if selecionado:
+        return processar_edicao(alunos, selecionado)
+    
+    return alunos
+
+def processar_saida():
+    print("Saindo... Até mais.")
+
 def main():
     alunos = carregar_alunos()
     
@@ -52,6 +146,8 @@ def main():
         match opcao:
             case OpcaoMenu.INSERIR:
                 alunos = processar_insercao(alunos)
+            case OpcaoMenu.PESQUISAR:
+                alunos = processar_pesquisa_opcao(alunos)
             case OpcaoMenu.SAIR:
                 processar_saida()
                 break
